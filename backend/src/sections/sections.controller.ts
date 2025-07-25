@@ -32,7 +32,7 @@ export class SectionsController {
   @Get()
   async findLatest() {
     const section = await this.sectionsService.findLatest();
-    return section ? section.sections : [];
+    return { sections: section ? section.sections : [] };
   }
 
   @Get(':id')

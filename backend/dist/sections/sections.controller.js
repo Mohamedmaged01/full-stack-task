@@ -26,7 +26,7 @@ let SectionsController = class SectionsController {
         }
         try {
             const section = await this.sectionsService.create(idea);
-            return section;
+            return { sections: section.sections };
         }
         catch (error) {
             throw new common_1.HttpException('Failed to create section', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
@@ -34,7 +34,7 @@ let SectionsController = class SectionsController {
     }
     async findLatest() {
         const section = await this.sectionsService.findLatest();
-        return section ? section.sections : [];
+        return { sections: section ? section.sections : [] };
     }
     async findById(id) {
         try {

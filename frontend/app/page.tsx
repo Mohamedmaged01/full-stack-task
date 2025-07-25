@@ -9,22 +9,51 @@ export default function Home() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!idea.trim()) {
+      setError("Please enter a website idea.");
+      return;
+    }
     setLoading(true);
     setError(null);
     setSections([]);
+    const minLoadingTime = 600;
+    const start = Date.now();
     try {
       const res = await fetch("http://localhost:3001/sections", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idea }),
       });
-      if (!res.ok) throw new Error("API error");
+      if (!res.ok) {
+        let message = "API error";
+        if (res.status === 400) message = "Please enter a website idea.";
+        else if (res.status === 500)
+          message = "Server error. Please try again later.";
+        throw new Error(message);
+      }
       const data = await res.json();
-      setSections(data.sections || []);
+      const elapsed = Date.now() - start;
+      if (elapsed < minLoadingTime) {
+        setTimeout(
+          () => setSections(data.sections || []),
+          minLoadingTime - elapsed
+        );
+      } else {
+        setSections(data.sections || []);
+      }
     } catch (err: any) {
-      setError(err.message || "Unknown error");
+      if (err.name === "TypeError") {
+        setError("Could not connect to the server. Is the backend running?");
+      } else {
+        setError(err.message || "Unknown error");
+      }
     } finally {
-      setLoading(false);
+      const elapsed = Date.now() - start;
+      if (elapsed < minLoadingTime) {
+        setTimeout(() => setLoading(false), minLoadingTime - elapsed);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
@@ -47,7 +76,7 @@ export default function Home() {
     <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-gradient-to-br from-blue-50 via-white to-purple-100">
       <div className="bg-white/90 shadow-2xl rounded-2xl p-10 w-full max-w-lg flex flex-col items-center gap-8 border border-blue-100">
         <h1 className="text-3xl font-extrabold mb-2 text-blue-700 tracking-tight drop-shadow">
-          Website Idea to Sections
+          Your AI Helper to get Ideas
         </h1>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full">
           <input
@@ -56,7 +85,6 @@ export default function Home() {
             onChange={(e) => setIdea(e.target.value)}
             placeholder="e.g. Landing page for bakery"
             className="border-2 border-blue-200 rounded-lg px-4 py-3 text-black text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition shadow-sm bg-blue-50/50"
-            required
           />
           <div className="flex gap-3">
             <button
@@ -92,18 +120,10 @@ export default function Home() {
                 "Generate Sections"
               )}
             </button>
-            <button
-              type="button"
-              onClick={handleFetch}
-              className="flex-1 bg-gray-100 text-gray-800 rounded-lg px-4 py-2 font-semibold shadow hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={loading}
-            >
-              Fetch Stored Sections
-            </button>
           </div>
         </form>
         {error && (
-          <div className="text-red-600 font-medium bg-red-50 border border-red-200 rounded p-2 w-full text-center">
+          <div className="text-red-700 font-semibold bg-red-100 border border-red-300 rounded p-3 w-full text-center mt-2 shadow">
             {error}
           </div>
         )}
